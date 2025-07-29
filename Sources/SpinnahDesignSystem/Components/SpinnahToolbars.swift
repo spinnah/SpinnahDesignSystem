@@ -1,31 +1,224 @@
 //
-//  SpinnahToolbars.swift
+//  SpinnahToolbars.swift v2
 //  SpinnahDesignSystem
 //
-//  Liquid Glass toolbar components that float above content with proper hierarchy
-//  Leverages native SwiftUI components for automatic Liquid Glass materials
+//  Unified toolbar components with consistent API patterns
+//  Updated for API Standardization - DESIGN-13
 //
 
 import SwiftUI
 
-// MARK: - Toolbar Content Extensions
+// MARK: - Toolbar Button Configuration
+public enum SpinnahToolbarButtonStyle {
+    case primary        // borderedProminent with SpinnahPrimary
+    case secondary      // bordered with SpinnahSecondary
+    case icon           // compact icon-only version
+    case destructive    // red prominent version
+}
+
+public enum SpinnahToolbarButtonSize {
+    case regular, small
+    
+    var controlSize: ControlSize {
+        switch self {
+        case .regular: return .regular
+        case .small: return .small
+        }
+    }
+    
+    var iconSize: CGFloat {
+        switch self {
+        case .regular: return 16
+        case .small: return 14
+        }
+    }
+    
+    var frameSize: CGFloat {
+        switch self {
+        case .regular: return 24
+        case .small: return 20
+        }
+    }
+}
+
+// MARK: - Unified Toolbar Button Component
+@MainActor
+public struct SpinnahToolbarButton: View {
+    let title: String?
+    let systemImage: String?
+    let style: SpinnahToolbarButtonStyle
+    let size: SpinnahToolbarButtonSize
+    let isDestructive: Bool
+    let action: () -> Void
+    
+    // Icon-only initializer
+    public init(
+        systemImage: String,
+        style: SpinnahToolbarButtonStyle = .icon,
+        size: SpinnahToolbarButtonSize = .small,
+        isDestructive: Bool = false,
+        action: @escaping () -> Void
+    ) {
+        self.title = nil
+        self.systemImage = systemImage
+        self.style = style
+        self.size = size
+        self.isDestructive = isDestructive
+        self.action = action
+    }
+    
+    // Text + Icon initializer
+    public init(
+        _ title: String,
+        systemImage: String? = nil,
+        style: SpinnahToolbarButtonStyle = .primary,
+        size: SpinnahToolbarButtonSize = .regular,
+        action: @escaping () -> Void
+    ) {
+        self.title = title
+        self.systemImage = systemImage
+        self.style = style
+        self.size = size
+        self.isDestructive = false
+        self.action = action
+    }
+    
+    public var body: some View {
+        switch style {
+        case .primary:
+            Button(action: action) {
+                buttonContent
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(buttonTint)
+            .controlSize(size.controlSize)
+            .help(helpText)
+            
+        case .secondary:
+            Button(action: action) {
+                buttonContent
+            }
+            .buttonStyle(.bordered)
+            .tint(buttonTint)
+            .controlSize(size.controlSize)
+            .help(helpText)
+            
+        case .icon:
+            Button(action: action) {
+                buttonContent
+            }
+            .buttonStyle(.bordered)
+            .tint(buttonTint)
+            .controlSize(size.controlSize)
+            .help(helpText)
+            
+        case .destructive:
+            Button(action: action) {
+                buttonContent
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(buttonTint)
+            .controlSize(size.controlSize)
+            .help(helpText)
+        }
+    }
+    
+    @ViewBuilder
+    private var buttonContent: some View {
+        if let title = title, style != .icon {
+            // Text + Optional Icon
+            HStack(spacing: 6) {
+                if let systemImage = systemImage {
+                    Image(systemName: systemImage)
+                        .font(.system(size: size.iconSize, weight: .medium))
+                }
+                Text(title)
+                    .font(.system(size: size.iconSize, weight: .medium))
+            }
+        } else if let systemImage = systemImage {
+            // Icon Only
+            Image(systemName: systemImage)
+                .font(.system(size: size.iconSize, weight: .medium))
+                .foregroundStyle(iconColor)
+                .frame(width: size.frameSize, height: size.frameSize)
+        }
+    }
+    
+    private var buttonTint: Color {
+        if isDestructive {
+            return .red
+        }
+        
+        switch style {
+        case .primary:
+            return Color.spinnahPrimary
+        case .secondary:
+            return Color.spinnahSecondary
+        case .icon:
+            return Color.spinnahPrimary
+        case .destructive:
+            return .red
+        }
+    }
+    
+    private var iconColor: Color {
+        if isDestructive {
+            return .red
+        }
+        return Color.spinnahPrimary
+    }
+    
+    private var helpText: String {
+        if let title = title {
+            return title
+        } else if let systemImage = systemImage {
+            return systemImage.replacingOccurrences(of: ".", with: " ").capitalized
+        }
+        return ""
+    }
+}
+
+// MARK: - Simple Search Button
+@MainActor
+public struct SpinnahSearchButton: View {
+    let action: () -> Void
+    
+    public init(action: @escaping () -> Void) {
+        self.action = action
+    }
+    
+    public var body: some View {
+        Button(action: action) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(Color.spinnahPrimary)
+                .frame(width: 20, height: 20)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .keyboardShortcut("f", modifiers: .command)
+        .help("Search")
+    }
+}
+
+// MARK: - Toolbar Extensions
+@MainActor
 public extension View {
-    /// Applies Spinnah-branded Liquid Glass toolbar styling
-    /// Uses system components that automatically get Liquid Glass effects
+    /// Applies Spinnah-branded toolbar styling
     func spinnahToolbar(
         title: String? = nil,
         showSearch: Bool = false,
-        searchBinding: Binding<String>? = nil,
+        onSearch: (() -> Void)? = nil,
         @ToolbarContentBuilder content: () -> some ToolbarContent
     ) -> some View {
         self
             .toolbar {
                 content()
                 
-                // Auto-add search if requested
-                if showSearch, let searchBinding = searchBinding {
+                // Simple search button
+                if showSearch, let onSearch = onSearch {
                     ToolbarItem(placement: .primaryAction) {
-                        SpinnahSearchButton(searchText: searchBinding)
+                        SpinnahSearchButton(action: onSearch)
                     }
                 }
             }
@@ -34,21 +227,20 @@ public extension View {
             .navigationTitle(title ?? "")
     }
     
-    /// Applies Spinnah-branded navigation toolbar with ornaments
-    /// Perfect for main navigation interfaces
+    /// Navigation toolbar variant
     func spinnahNavigationToolbar(
         title: String,
         showSearch: Bool = true,
-        searchBinding: Binding<String>? = nil,
+        onSearch: (() -> Void)? = nil,
         @ToolbarContentBuilder content: () -> some ToolbarContent
     ) -> some View {
         self
             .toolbar {
                 content()
                 
-                if showSearch, let searchBinding = searchBinding {
+                if showSearch, let onSearch = onSearch {
                     ToolbarItem(placement: .primaryAction) {
-                        SpinnahSearchButton(searchText: searchBinding)
+                        SpinnahSearchButton(action: onSearch)
                     }
                 }
             }
@@ -59,143 +251,58 @@ public extension View {
     }
 }
 
-// MARK: - Spinnah Search Button
-/// Expandable search button that starts as circle and expands for entry
-/// Uses Liquid Glass materials automatically via system button styles
-public struct SpinnahSearchButton: View {
-    @Binding private var searchText: String
-    @State private var isExpanded = false
-    @FocusState private var isSearchFocused: Bool
-    
-    public init(searchText: Binding<String>) {
-        self._searchText = searchText
+// MARK: - Convenience Extensions
+@MainActor
+public extension SpinnahToolbarButton {
+    /// Primary toolbar button
+    static func primary(
+        _ title: String,
+        systemImage: String? = nil,
+        action: @escaping () -> Void
+    ) -> SpinnahToolbarButton {
+        SpinnahToolbarButton(title, systemImage: systemImage, style: .primary, action: action)
     }
     
-    public var body: some View {
-        HStack(spacing: 8) {
-            if isExpanded {
-                TextField("Search", text: $searchText)
-                    .textFieldStyle(.roundedBorder)
-                    .focused($isSearchFocused)
-                    .frame(width: 180)
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .trailing).combined(with: .opacity),
-                        removal: .move(edge: .trailing).combined(with: .opacity)
-                    ))
-            }
-            
-            Button(action: toggleSearch) {
-                Image(systemName: isExpanded ? "xmark.circle.fill" : "magnifyingglass")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(isExpanded ? Color.spinnahSecondary : Color.spinnahPrimary)
-                    .frame(width: 20, height: 20)
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-            .keyboardShortcut("f", modifiers: .command)
-        }
-        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: isExpanded)
+    /// Secondary toolbar button
+    static func secondary(
+        _ title: String,
+        systemImage: String? = nil,
+        action: @escaping () -> Void
+    ) -> SpinnahToolbarButton {
+        SpinnahToolbarButton(title, systemImage: systemImage, style: .secondary, action: action)
     }
     
-    private func toggleSearch() {
-        withAnimation {
-            isExpanded.toggle()
-            if isExpanded {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    isSearchFocused = true
-                }
-            } else {
-                searchText = ""
-                isSearchFocused = false
-            }
-        }
-    }
-}
-
-// MARK: - Spinnah Toolbar Button Styles
-/// Primary toolbar button using Spinnah gradient
-public struct SpinnahToolbarButtonPrimary: View {
-    let title: String
-    let systemImage: String?
-    let action: () -> Void
-    
-    public init(_ title: String, systemImage: String? = nil, action: @escaping () -> Void) {
-        self.title = title
-        self.systemImage = systemImage
-        self.action = action
+    /// Icon-only toolbar button
+    static func icon(
+        _ systemImage: String,
+        size: SpinnahToolbarButtonSize = .small,
+        isDestructive: Bool = false,
+        action: @escaping () -> Void
+    ) -> SpinnahToolbarButton {
+        SpinnahToolbarButton(
+            systemImage: systemImage,
+            style: .icon,
+            size: size,
+            isDestructive: isDestructive,
+            action: action
+        )
     }
     
-    public var body: some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                if let systemImage = systemImage {
-                    Image(systemName: systemImage)
-                }
-                Text(title)
-            }
-        }
-        .buttonStyle(.borderedProminent)
-        .tint(Color.spinnahPrimary)
-    }
-}
-
-/// Secondary toolbar button with subtle styling
-public struct SpinnahToolbarButtonSecondary: View {
-    let title: String
-    let systemImage: String?
-    let action: () -> Void
-    
-    public init(_ title: String, systemImage: String? = nil, action: @escaping () -> Void) {
-        self.title = title
-        self.systemImage = systemImage
-        self.action = action
-    }
-    
-    public var body: some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                if let systemImage = systemImage {
-                    Image(systemName: systemImage)
-                }
-                Text(title)
-            }
-        }
-        .buttonStyle(.bordered)
-        .tint(Color.spinnahSecondary)
-    }
-}
-
-/// Icon-only toolbar button for compact layouts
-public struct SpinnahToolbarButtonIcon: View {
-    let systemImage: String
-    let action: () -> Void
-    let isDestructive: Bool
-    
-    public init(systemImage: String, isDestructive: Bool = false, action: @escaping () -> Void) {
-        self.systemImage = systemImage
-        self.isDestructive = isDestructive
-        self.action = action
-    }
-    
-    public var body: some View {
-        Button(action: action) {
-            Image(systemName: systemImage)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(isDestructive ? .red : Color.spinnahPrimary)
-                .frame(width: 20, height: 20)
-        }
-        .buttonStyle(.bordered)
-        .controlSize(.small)
-        .help(systemImage) // Adds tooltip on hover
+    /// Destructive toolbar button
+    static func destructive(
+        _ title: String,
+        systemImage: String? = nil,
+        action: @escaping () -> Void
+    ) -> SpinnahToolbarButton {
+        SpinnahToolbarButton(title, systemImage: systemImage, style: .destructive, action: action)
     }
 }
 
 // MARK: - Predefined Toolbar Content
-/// Common toolbar configurations for quick implementation
+@MainActor
 public struct SpinnahToolbarContent {
     
     /// Standard document toolbar with New, Open, Save actions
-    @MainActor
     public static func documentToolbar(
         onNew: @escaping () -> Void,
         onOpen: @escaping () -> Void,
@@ -203,18 +310,17 @@ public struct SpinnahToolbarContent {
     ) -> some ToolbarContent {
         Group {
             ToolbarItemGroup(placement: .navigation) {
-                SpinnahToolbarButtonIcon(systemImage: "doc.badge.plus", action: onNew)
-                SpinnahToolbarButtonIcon(systemImage: "folder", action: onOpen)
+                SpinnahToolbarButton.icon("doc.badge.plus", action: onNew)
+                SpinnahToolbarButton.icon("folder", action: onOpen)
             }
             
             ToolbarItem(placement: .primaryAction) {
-                SpinnahToolbarButtonIcon(systemImage: "square.and.arrow.down", action: onSave)
+                SpinnahToolbarButton.icon("square.and.arrow.down", action: onSave)
             }
         }
     }
     
     /// Media toolbar with play/pause controls
-    @MainActor
     public static func mediaToolbar(
         isPlaying: Bool,
         onPlayPause: @escaping () -> Void,
@@ -223,82 +329,105 @@ public struct SpinnahToolbarContent {
     ) -> some ToolbarContent {
         Group {
             ToolbarItem(placement: .navigation) {
-                SpinnahToolbarButtonIcon(systemImage: "backward.fill", action: onPrevious)
+                SpinnahToolbarButton.icon("backward.fill", action: onPrevious)
             }
             
             ToolbarItem(placement: .navigation) {
-                SpinnahToolbarButtonIcon(
-                    systemImage: isPlaying ? "pause.fill" : "play.fill",
+                SpinnahToolbarButton.icon(
+                    isPlaying ? "pause.fill" : "play.fill",
                     action: onPlayPause
                 )
             }
             
             ToolbarItem(placement: .navigation) {
-                SpinnahToolbarButtonIcon(systemImage: "forward.fill", action: onNext)
+                SpinnahToolbarButton.icon("forward.fill", action: onNext)
             }
         }
     }
     
     /// Settings toolbar with preferences and help
-    @MainActor
     public static func settingsToolbar(
         onPreferences: @escaping () -> Void,
         onHelp: @escaping () -> Void
     ) -> some ToolbarContent {
         Group {
             ToolbarItem(placement: .primaryAction) {
-                SpinnahToolbarButtonIcon(systemImage: "questionmark.circle", action: onHelp)
+                SpinnahToolbarButton.icon("questionmark.circle", action: onHelp)
             }
             
             ToolbarItem(placement: .primaryAction) {
-                SpinnahToolbarButtonIcon(systemImage: "gearshape", action: onPreferences)
+                SpinnahToolbarButton.icon("gearshape", action: onPreferences)
+            }
+        }
+    }
+    
+    /// Editing toolbar with common text actions
+    public static func editingToolbar(
+        onBold: @escaping () -> Void,
+        onItalic: @escaping () -> Void,
+        onUnderline: @escaping () -> Void
+    ) -> some ToolbarContent {
+        Group {
+            ToolbarItemGroup(placement: .navigation) {
+                SpinnahToolbarButton.icon("bold", action: onBold)
+                SpinnahToolbarButton.icon("italic", action: onItalic)
+                SpinnahToolbarButton.icon("underline", action: onUnderline)
             }
         }
     }
 }
 
 // MARK: - Preview Provider
-#if DEBUG
-struct SpinnahToolbars_Previews: PreviewProvider {
-    static var previews: some View {
-        NavigationStack {
-            VStack {
-                Text("Content below toolbar")
-                    .font(.largeTitle)
-                    .foregroundStyle(Color.spinnahTextPrimary)
-                Spacer()
+#Preview("Toolbar Buttons") {
+    NavigationStack {
+        VStack(spacing: 40) {
+            Text("Unified Toolbar Testing")
+                .font(.largeTitle)
+                .foregroundStyle(Color.spinnahTextPrimary)
+            
+            VStack(spacing: 20) {
+                Text("Individual Button Styles")
+                    .font(.headline)
+                
+                HStack(spacing: 12) {
+                    SpinnahToolbarButton.primary("Save", systemImage: "square.and.arrow.down") {
+                        print("Primary toolbar button")
+                    }
+                    
+                    SpinnahToolbarButton.secondary("Export", systemImage: "square.and.arrow.up") {
+                        print("Secondary toolbar button")
+                    }
+                    
+                    SpinnahToolbarButton.icon("gearshape") {
+                        print("Icon button")
+                    }
+                    
+                    SpinnahToolbarButton.icon("trash", isDestructive: true) {
+                        print("Destructive icon")
+                    }
+                }
+                
+                HStack(spacing: 12) {
+                    SpinnahSearchButton {
+                        print("Search triggered")
+                    }
+                    
+                    SpinnahToolbarButton.destructive("Delete", systemImage: "trash") {
+                        print("Destructive button")
+                    }
+                }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.spinnahBackgroundPrimary)
-            .spinnahNavigationToolbar(title: "Spinnah App", searchBinding: .constant("")) {
-                SpinnahToolbarContent.documentToolbar(
-                    onNew: { print("New") },
-                    onOpen: { print("Open") },
-                    onSave: { print("Save") }
-                )
-            }
+            
+            Spacer()
         }
-        .previewDisplayName("Navigation Toolbar")
-        
-        NavigationStack {
-            VStack {
-                Text("Media Player Interface")
-                    .font(.title)
-                    .foregroundStyle(Color.spinnahTextPrimary)
-                Spacer()
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.spinnahBackgroundSecondary)
-            .spinnahToolbar(title: "Now Playing") {
-                SpinnahToolbarContent.mediaToolbar(
-                    isPlaying: true,
-                    onPlayPause: { print("Play/Pause") },
-                    onNext: { print("Next") },
-                    onPrevious: { print("Previous") }
-                )
-            }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.spinnahBackgroundPrimary)
+        .spinnahNavigationToolbar(title: "Toolbar Testing", onSearch: { print("Search") }) {
+            SpinnahToolbarContent.documentToolbar(
+                onNew: { print("New") },
+                onOpen: { print("Open") },
+                onSave: { print("Save") }
+            )
         }
-        .previewDisplayName("Media Toolbar")
     }
 }
-#endif
