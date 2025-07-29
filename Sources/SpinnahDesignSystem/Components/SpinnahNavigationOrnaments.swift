@@ -19,6 +19,22 @@ public enum SpinnahOrnamentPosition {
     case top, bottom
     case topCenter, bottomCenter
     case custom(EdgeInsets)
+    
+    var alignment: Alignment {
+        switch self {
+        case .top, .topCenter: return .top
+        case .bottom, .bottomCenter: return .bottom
+        case .custom: return .bottom
+        }
+    }
+    
+    var edgePadding: EdgeInsets {
+        switch self {
+        case .top, .topCenter: return EdgeInsets(top: 20, leading: 0, bottom: 0, trailing: 0)
+        case .bottom, .bottomCenter: return EdgeInsets(top: 0, leading: 0, bottom: 20, trailing: 0)
+        case .custom: return EdgeInsets()
+        }
+    }
 }
 
 // MARK: - Main Ornament View Modifier
@@ -41,6 +57,7 @@ public extension View {
                     insertion: .scale(scale: 0.9).combined(with: .opacity),
                     removal: .scale(scale: 0.9).combined(with: .opacity)
                 ))
+                .padding(position.edgePadding)
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isVisible)
@@ -120,11 +137,10 @@ private struct SpinnahOrnamentContainer<Content: View>: View {
     
     var body: some View {
         content()
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
             .background(backgroundMaterial, in: RoundedRectangle(cornerRadius: 50))
             .shadow(color: shadowColor, radius: shadowRadius, x: 0, y: shadowOffset)
-            .offset(position.offset)
     }
     
     private var backgroundMaterial: Material {
@@ -502,27 +518,6 @@ public struct SpinnahMediaControlsOrnament: View {
             HStack(spacing: 8) {
                 SpinnahOrnamentButton(systemImage: "speaker.2", action: {})
             }
-        }
-    }
-}
-
-// MARK: - Position Extension
-private extension SpinnahOrnamentPosition {
-    var alignment: Alignment {
-        switch self {
-        case .top, .topCenter: return .top
-        case .bottom, .bottomCenter: return .bottom
-        case .custom: return .bottom
-        }
-    }
-    
-    var offset: CGSize {
-        switch self {
-        case .top: return CGSize(width: 0, height: 0)
-        case .bottom: return CGSize(width: 0, height: 0)
-        case .topCenter: return CGSize(width: 0, height: 0)
-        case .bottomCenter: return CGSize(width: 0, height: 0)
-        case .custom(let insets): return CGSize(width: insets.leading - insets.trailing, height: insets.top - insets.bottom)
         }
     }
 }

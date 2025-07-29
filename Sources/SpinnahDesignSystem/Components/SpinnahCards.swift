@@ -1,9 +1,10 @@
 //
-//  SpinnahCards.swift
+//  SpinnahCards.swift v2
 //  SpinnahDesignSystem
 //
 //  Beautiful card components with Liquid Glass materials and Spinnah branding
 //  Multiple variants for different content types and elevations
+//  Updated for API Standardization - DESIGN-13
 //
 
 import SwiftUI
@@ -31,6 +32,7 @@ public enum SpinnahCardSize {
 }
 
 // MARK: - Base Card Component
+@MainActor
 public struct SpinnahCard<Content: View>: View {
     let style: SpinnahCardStyle
     let size: SpinnahCardSize
@@ -121,6 +123,7 @@ public struct SpinnahCard<Content: View>: View {
 }
 
 // MARK: - Content Cards
+@MainActor
 public struct SpinnahContentCard: View {
     let title: String
     let subtitle: String?
@@ -179,6 +182,7 @@ public struct SpinnahContentCard: View {
 }
 
 // MARK: - Action Cards
+@MainActor
 public struct SpinnahActionCard: View {
     let title: String
     let description: String?
@@ -230,6 +234,7 @@ public struct SpinnahActionCard: View {
 }
 
 // MARK: - Stats Cards
+@MainActor
 public struct SpinnahStatsCard: View {
     let value: String
     let label: String
@@ -281,6 +286,7 @@ public struct SpinnahStatsCard: View {
 }
 
 // MARK: - Media Cards
+@MainActor
 public struct SpinnahMediaCard: View {
     let title: String
     let artist: String?
@@ -353,6 +359,7 @@ public struct SpinnahMediaCard: View {
 }
 
 // MARK: - Card Layout Helpers
+@MainActor
 public struct SpinnahCardGrid<Content: View>: View {
     let columns: Int
     let spacing: CGFloat
@@ -375,75 +382,70 @@ public struct SpinnahCardGrid<Content: View>: View {
 }
 
 // MARK: - Preview Provider
-#if DEBUG
-struct SpinnahCards_Previews: PreviewProvider {
-    static var previews: some View {
-        ScrollView {
-            LazyVStack(spacing: 20) {
-                // Content Cards
-                SpinnahContentCard(
-                    title: "Welcome to Spinnah",
-                    subtitle: "Design System v2.0",
-                    systemImage: "sparkles",
-                    content: "Beautiful Liquid Glass components with your signature red-orange to golden-yellow gradient.",
-                    style: .elevated
+#Preview("Spinnah Cards") {
+    ScrollView {
+        LazyVStack(spacing: 20) {
+            // Content Cards
+            SpinnahContentCard(
+                title: "Welcome to Spinnah",
+                subtitle: "Design System v2.0",
+                systemImage: "sparkles",
+                content: "Beautiful Liquid Glass components with your signature red-orange to golden-yellow gradient.",
+                style: .elevated
+            )
+            
+            // Action Cards Grid
+            SpinnahCardGrid(columns: 3) {
+                SpinnahActionCard(
+                    title: "Create",
+                    description: "New project",
+                    systemImage: "plus.circle.fill",
+                    style: .glass
+                ) { print("Create") }
+                
+                SpinnahActionCard(
+                    title: "Import",
+                    description: "From file",
+                    systemImage: "square.and.arrow.down",
+                    style: .outline
+                ) { print("Import") }
+                
+                SpinnahActionCard(
+                    title: "Settings",
+                    description: "Preferences",
+                    systemImage: "gearshape.fill",
+                    style: .gradient
+                ) { print("Settings") }
+            }
+            
+            // Stats Cards
+            HStack(spacing: 16) {
+                SpinnahStatsCard(
+                    value: "1,247",
+                    label: "Total Projects",
+                    trend: "+12%",
+                    isPositive: true
                 )
                 
-                // Action Cards Grid
-                SpinnahCardGrid(columns: 3) {
-                    SpinnahActionCard(
-                        title: "Create",
-                        description: "New project",
-                        systemImage: "plus.circle.fill",
-                        style: .glass
-                    ) { print("Create") }
-                    
-                    SpinnahActionCard(
-                        title: "Import",
-                        description: "From file",
-                        systemImage: "square.and.arrow.down",
-                        style: .outline
-                    ) { print("Import") }
-                    
-                    SpinnahActionCard(
-                        title: "Settings",
-                        description: "Preferences",
-                        systemImage: "gearshape.fill",
-                        style: .gradient
-                    ) { print("Settings") }
-                }
-                
-                // Stats Cards
-                HStack(spacing: 16) {
-                    SpinnahStatsCard(
-                        value: "1,247",
-                        label: "Total Projects",
-                        trend: "+12%",
-                        isPositive: true
-                    )
-                    
-                    SpinnahStatsCard(
-                        value: "98.5%",
-                        label: "Success Rate",
-                        trend: "-0.3%",
-                        isPositive: false
-                    )
-                }
-                
-                // Media Card
-                SpinnahMediaCard(
-                    title: "Liquid Dreams",
-                    artist: "Spinnah Studios",
-                    duration: "3:42",
-                    artwork: "music.quarternote.3",
-                    isPlaying: true,
-                    onPlayPause: { print("Play/Pause") }
+                SpinnahStatsCard(
+                    value: "98.5%",
+                    label: "Success Rate",
+                    trend: "-0.3%",
+                    isPositive: false
                 )
             }
-            .padding(20)
+            
+            // Media Card
+            SpinnahMediaCard(
+                title: "Liquid Dreams",
+                artist: "Spinnah Studios",
+                duration: "3:42",
+                artwork: "music.quarternote.3",
+                isPlaying: true,
+                onPlayPause: { print("Play/Pause") }
+            )
         }
-        .background(Color.spinnahBackgroundPrimary)
-        .previewDisplayName("Spinnah Cards")
+        .padding(20)
     }
+    .background(Color.spinnahBackgroundPrimary)
 }
-#endif
