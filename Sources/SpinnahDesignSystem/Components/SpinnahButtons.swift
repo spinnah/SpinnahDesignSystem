@@ -14,6 +14,7 @@ public enum SpinnahButtonStyle {
     case secondary      // Bordered with tint
     case tertiary       // Plain text style
     case destructive    // Red borderedProminent
+    case liquidGlass    // Apple liquid glass effect
 }
 
 public enum SpinnahButtonSize {
@@ -49,16 +50,21 @@ public struct SpinnahButton: View {
     let size: SpinnahButtonSize
     let action: () -> Void
     
+    // New tint parameter for liquidGlass style only
+    let liquidGlassTint: LinearGradient?
+    
     public init(
         _ title: String,
         style: SpinnahButtonStyle = .primary,
         size: SpinnahButtonSize = .large,
+        liquidGlassTint: LinearGradient? = nil,
         action: @escaping () -> Void
     ) {
         self.title = title
         self.style = style
         self.size = size
         self.action = action
+        self.liquidGlassTint = liquidGlassTint
     }
     
     public var body: some View {
@@ -87,7 +93,7 @@ public struct SpinnahButton: View {
                     .padding(size.padding)
             }
             .buttonStyle(.bordered)
-            .tint(Color.spinnahPrimary)
+            .tint(Color.spinnahSecondary)
             .controlSize(size.controlSize)
             
         case .tertiary:
@@ -109,6 +115,15 @@ public struct SpinnahButton: View {
             .buttonStyle(.borderedProminent)
             .tint(.red)
             .controlSize(size.controlSize)
+            
+        case .liquidGlass:
+            Button(action: action) {
+                Text(title)
+                    .font(.system(size: size.fontSize, weight: .medium, design: .rounded))
+                    .padding(size.padding)
+                    .liquidGlass(tint: liquidGlassTint)
+            }
+            .controlSize(size.controlSize)
         }
     }
     
@@ -119,6 +134,8 @@ public struct SpinnahButton: View {
         case .secondary:
             return Color.spinnahPrimary
         case .tertiary:
+            return Color.spinnahPrimary
+        case .liquidGlass:
             return Color.spinnahPrimary
         }
     }
@@ -135,6 +152,8 @@ private extension View {
             return AnyView(self.buttonStyle(.bordered))
         case .tertiary:
             return AnyView(self.buttonStyle(.plain))
+        case .liquidGlass:
+            return AnyView(self) // No additional buttonStyle for liquidGlass
         }
     }
 }
@@ -174,6 +193,25 @@ public extension SpinnahButton {
         action: @escaping () -> Void
     ) -> SpinnahButton {
         SpinnahButton(title, style: .destructive, size: size, action: action)
+    }
+    
+    /// Liquid Glass button (Apple liquid glass effect)
+    /// - Parameters:
+    ///   - title: Button title
+    ///   - size: Button size
+    ///   - tint: Optional gradient tint for the liquid glass effect. Defaults to blue/green gradient.
+    ///   - action: Button action closure
+    static func liquidGlass(
+        _ title: String,
+        size: SpinnahButtonSize = .large,
+        tint: LinearGradient? = LinearGradient(
+            colors: [Color.blue, Color.green],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        ),
+        action: @escaping () -> Void
+    ) -> SpinnahButton {
+        SpinnahButton(title, style: .liquidGlass, size: size, liquidGlassTint: tint, action: action)
     }
 }
 
@@ -266,9 +304,68 @@ public extension SpinnahButton {
                     }
                 }
             }
+            
+            VStack(spacing: 16) {
+                Text("Liquid Glass Buttons")
+                    .font(.headline)
+                    .foregroundStyle(Color.spinnahTextPrimary)
+                
+                // Blue/Green (Aqua Glass)
+                SpinnahButton.liquidGlass("Aqua Glass") {
+                    print("Liquid glass tapped!")
+                }
+                
+                // Light Blue/Orange (Warm Glass)
+                SpinnahButton.liquidGlass(
+                    "Warm Glass",
+                    size: .regular,
+                    tint: LinearGradient(
+                        colors: [Color.cyan.opacity(0.8), Color.orange.opacity(0.8)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                ) {
+                    print("Warm liquid glass tapped!")
+                }
+                
+                // Orange/Yellow (Solid Vibrant)
+                SpinnahButton.liquidGlass(
+                    "Vibrant Glass",
+                    size: .large,
+                    tint: LinearGradient(
+                        colors: [Color.orange.opacity(0.9), Color.yellow.opacity(0.9)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                ) {
+                    print("Vibrant liquid glass tapped!")
+                }
+            }
         }
         .padding()
     }
     .background(Color.spinnahBackgroundPrimary)
+}
+
+// MARK: - Liquid Glass Modifier
+@MainActor
+private extension View {
+    @ViewBuilder
+    func liquidGlass(tint: LinearGradient? = nil) -> some View {
+        self
+            .padding(0) // Remove any internal padding
+            .background(
+                ZStack {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .glassEffect()
+                    if let tint = tint {
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(tint)
+                            .opacity(0.6)
+                    }
+                }
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
 }
 
